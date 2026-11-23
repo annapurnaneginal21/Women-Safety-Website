@@ -1,28 +1,18 @@
+
 const express = require("express");
 const router = express.Router();
-const Contact = require("../models/contactModel");
-const SOS = require("../models/SOS"); // 👈 ADD THIS
+const SOS = require("../models/sosModel");
 const nodemailer = require("nodemailer");
 
-// Email setup
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "annapurnaneginal21@gmail.com",
-    pass: "udiyltucitijfnda"
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
-// 🚨 SOS (POST)
-router.post("/", async (req, res) => {
-  try {
-    const { location } = req.body;
-
-    // 👉 Static user (later dynamic करू शकतोस)
-    const name = "Annapurna";
-    const phone = "7840942103";
-
-    // 🔥 GET ALL SOS
+// Get SOS history
 router.get("/history", async (req, res) => {
   try {
     const data = await SOS.find().sort({ time: -1 });
@@ -32,41 +22,37 @@ router.get("/history", async (req, res) => {
   }
 });
 
-    // ✅ SAVE TO DB
+// Send SOS alert
+router.post("/", async (req, res) => {
+  try {
+    const { location } = req.body;
+
+    const name = "Annapurna";
+    const phone = "7840942103";
+
     const newSOS = new SOS({
-      name,
-      phone,
-      location
+      message: "Emergency Alert",
+      time: new Date()
     });
 
     await newSOS.save();
 
-    // 📧 Email
     const mailOptions = {
-      from: "annapurnaneginal21@gmail.com",
-      to: "annapurnaneginal21@gmail.com",
-      subject: "🚨 SOS Alert",
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: "SOS Alert",
       html: `
-        <h1 style="color:red;">🚨 SOS ALERT 🚨</h1>
-
-        <p style="font-size:18px;">
-          <b>Name:</b> ${name} <br>
-          <b>Phone:</b> ${phone}
-        </p>
-
-        <p style="font-size:20px; color:red;">
-          Emergency! I need help immediately.
-        </p>
-
-        <p>
-          📍 <a href="${location}" target="_blank">View My Location</a>
-        </p>
+        <h1>SOS ALERT</h1>
+        <p>Name: ${name}</p>
+        <p>Phone: ${phone}</p>
+        <p>Emergency! I need help immediately.</p>
+        <p><a href="${location}" target="_blank">View My Location</a></p>
       `
     };
 
     await transporter.sendMail(mailOptions);
 
-    res.json({ message: "SOS Saved + Email Sent ✅" });
+    res.json({ message: "SOS Saved + Email Sent" });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
